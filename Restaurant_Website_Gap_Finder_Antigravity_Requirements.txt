@@ -1,0 +1,1302 @@
+# RESTAURANT WEBSITE GAP FINDER
+## Antigravity IDE — Pre-Implementation Project Requirements Pack
+
+**Version:** 1.0  
+**Date:** 5 October 2026  
+**Purpose:** This document MUST be read and understood before implementation begins.
+
+---
+
+# 0. CRITICAL INSTRUCTION TO ANTIGRAVITY
+
+## DO NOT BUILD A DEMO
+
+This project is NOT:
+
+- a visual prototype
+- a static dashboard
+- a portfolio template
+- a mock SaaS
+- a fake AI agent
+- a frontend-only website
+- a UI concept
+- a simulated Google Maps integration
+
+Build a **REAL, PRODUCTION-READY, FUNCTIONAL APPLICATION**.
+
+Every visible feature must have real backend functionality.
+
+Do NOT use:
+
+- fake restaurant data
+- fake Google Maps results
+- fake ratings
+- fake review counts
+- fake phone numbers
+- fake emails
+- fake owners
+- fake social profiles
+- fake websites
+- fake Place IDs
+- fake API responses
+- hardcoded sample leads
+- simulated research progress
+
+If an API is not configured, show the real configuration/error state.
+
+Example:
+
+> Google Maps API key is not configured.
+
+Do NOT display fake results such as:
+
+> 12,438 restaurants discovered.
+
+---
+
+# 1. PRODUCT OVERVIEW
+
+## Product Name
+
+**Restaurant Website Gap Finder**
+
+## Purpose
+
+A production B2B lead-generation and research platform that discovers real restaurants in user-selected locations, qualifies them using configurable Google Maps criteria, verifies whether they have an official website, enriches public business information, deduplicates records, scores digital opportunity, stores source evidence, and exports qualified leads.
+
+## Primary Users
+
+- Web developers
+- Web agencies
+- Digital marketing agencies
+- Restaurant technology consultants
+- B2B sales/research teams
+
+## Core Problem
+
+Finding restaurants that are legitimate, active, sufficiently established, and digitally underserved is time-consuming.
+
+The application automates:
+
+DISCOVERY → QUALIFICATION → WEBSITE VERIFICATION → ENRICHMENT → DEDUPLICATION → SCORING → STORAGE → EXPORT
+
+---
+
+# 2. NON-NEGOTIABLE PRODUCT PRINCIPLES
+
+1. Accuracy is more important than quantity.
+2. Never fabricate data.
+3. Never pretend an API operation succeeded when it did not.
+4. Never show simulated progress as real progress.
+5. Every lead must be backed by actual research.
+6. Every important data point should have source evidence.
+7. Uncertain information must be clearly marked.
+8. Location must be configurable.
+9. Los Angeles is only an example, NOT a hardcoded location.
+10. The requested lead count is a target, not permission to fabricate records.
+
+If the user requests 1,000 leads and only 427 qualify:
+
+- Target = 1,000
+- Qualified = 427
+- Shortfall = 573
+
+Return 427 real qualified leads.
+
+Never manufacture the remaining 573.
+
+---
+
+# 3. PRD — PRODUCT REQUIREMENTS DOCUMENT
+
+## 3.1 Campaign Builder
+
+The user must be able to create a campaign with:
+
+- Campaign name
+- Country
+- State/Province/Region
+- City
+- Neighborhood/Area
+- Postal/ZIP code
+- Radius
+- Business category
+- Minimum Google rating
+- Minimum Google review count
+- Website requirement
+- Target lead count
+- Enrichment options
+- Notes
+
+## 3.2 Location System
+
+Location must be independent from business criteria.
+
+Support:
+
+- Country
+- State/Province/Region
+- City
+- Neighborhood
+- Area
+- Postal code
+- Radius
+- Multiple locations
+
+Location modes:
+
+- CITY
+- AREA
+- RADIUS
+- POSTAL_CODE
+
+Use dependent location selectors where possible.
+
+Example:
+
+Country → United States  
+State → California  
+City → Los Angeles  
+Area → Hollywood
+
+The system MUST NOT silently replace the selected location with another location.
+
+Every lead must be geographically validated.
+
+## 3.3 Google Maps / Google Places
+
+Use the official:
+
+**Google Places API (New)**
+
+Use real API data.
+
+Retrieve available:
+
+- Place ID
+- Business name
+- Rating
+- Review count
+- Business status
+- Address
+- Latitude
+- Longitude
+- Phone
+- Website URI
+- Categories
+- Google Maps URL
+
+Google Place ID should be the primary external business identity.
+
+Use field masks.
+
+Avoid duplicate Place Details requests.
+
+For large cities, use multiple search areas/queries so discovery is not dependent on a single search.
+
+Do not claim exhaustive coverage unless the system actually has evidence of exhaustive coverage.
+
+---
+
+# 4. LEAD QUALIFICATION
+
+Default example:
+
+- Business category = Restaurant
+- Minimum rating = 3.0
+- Minimum reviews = 200
+- Business status = Operating
+- Website requirement = No official website
+
+All values must be configurable.
+
+Qualification must be based on real data.
+
+Possible qualification statuses:
+
+- QUALIFIED
+- REJECTED
+- NEEDS_REVIEW
+- INSUFFICIENT_DATA
+- DUPLICATE
+- HAS_WEBSITE
+- CLOSED
+- OUTSIDE_TARGET_AREA
+
+Rejection reasons:
+
+- HAS_OFFICIAL_WEBSITE
+- REVIEW_COUNT_BELOW_THRESHOLD
+- RATING_BELOW_THRESHOLD
+- NOT_A_RESTAURANT
+- PERMANENTLY_CLOSED
+- DUPLICATE
+- OUTSIDE_TARGET_AREA
+- INSUFFICIENT_INFORMATION
+- WEBSITE_STATUS_UNCLEAR
+
+---
+
+# 5. WEBSITE GAP DETECTION
+
+Google not returning a website does NOT automatically prove that a restaurant has no website.
+
+The system must independently verify website status.
+
+Check:
+
+- Google website URI
+- Search results
+- Domain availability/reachability
+- Restaurant name
+- Address
+- Phone
+- Branding
+- Menu
+- About/contact information
+- Structured data
+- Social links
+- Business identity
+
+Website statuses:
+
+- NO_WEBSITE_VERIFIED
+- NO_WEBSITE_PROBABLE
+- HAS_OFFICIAL_WEBSITE
+- SOCIAL_ONLY
+- MARKETPLACE_ONLY
+- UNKNOWN
+
+Social pages and third-party platforms do NOT count as official websites by themselves.
+
+Examples:
+
+- Facebook = not an official website
+- Instagram = not an official website
+- Yelp = not an official website
+- TripAdvisor = not an official website
+- DoorDash = not an official website
+- Uber Eats = not an official website
+- Grubhub = not an official website
+- OpenTable = not an official website
+
+---
+
+# 6. DATA ENRICHMENT
+
+Only use publicly available business/professional information.
+
+## Phone
+
+Store:
+
+- Primary phone
+- Secondary phone
+- International phone
+
+Normalize international formats.
+
+## WhatsApp
+
+Do NOT assume:
+
+phone number = WhatsApp number
+
+Only mark WhatsApp as verified if a public source actually indicates WhatsApp.
+
+Statuses:
+
+- VERIFIED
+- PROBABLE
+- NOT_FOUND
+
+## Email
+
+Find public business email addresses.
+
+Never guess:
+
+info@restaurant.com
+
+unless it was actually discovered.
+
+If not found:
+
+`Not Found`
+
+## Social Media
+
+Support:
+
+- Facebook
+- Instagram
+- TikTok
+- LinkedIn
+- X/Twitter
+- YouTube
+
+Verify that the account belongs to the restaurant using identity signals.
+
+---
+
+# 7. OWNER / DECISION MAKER RESEARCH
+
+Only collect publicly available business/professional information.
+
+Allowed:
+
+- Owner name publicly listed by business
+- Founder name
+- Manager name
+- Public professional profile
+- Public business contact
+- Public business role
+
+Do NOT collect:
+
+- Private home address
+- Private family information
+- Sensitive personal information
+- Private personal phone numbers
+- Private personal email addresses
+
+Fields:
+
+- owner_name
+- co_owner_name
+- founder_name
+- manager_name
+- decision_maker_role
+- public_business_contact
+
+If unavailable:
+
+`Not Found`
+
+Never infer ownership from a random social profile.
+
+---
+
+# 8. LEAD SCORING
+
+Lead score = sales-research priority.
+
+It is NOT restaurant quality.
+
+Suggested score:
+
+| Signal | Points |
+|---|---:|
+| Website gap | 30 |
+| Review volume | 20 |
+| Rating | 10 |
+| Active business | 10 |
+| Phone | 5 |
+| Email | 5 |
+| Social | 5 |
+| Owner/decision maker | 5 |
+| Category match | 5 |
+| Multi-source verification | 5 |
+| **Total** | **100** |
+
+Digital opportunity label:
+
+- HIGH DIGITAL GAP
+- MEDIUM DIGITAL GAP
+- LOW DIGITAL GAP
+
+This is an opportunity signal, not a guarantee that the restaurant will buy a website.
+
+---
+
+# 9. DEDUPLICATION
+
+Use multiple signals:
+
+1. Google Place ID
+2. Normalized phone
+3. Address
+4. Website domain
+5. Latitude/longitude
+6. Restaurant name similarity
+
+Be conservative with chains.
+
+Two locations of the same chain are not automatically duplicates.
+
+---
+
+# 10. REAL BACKEND REQUIREMENT
+
+Use a real persistent database.
+
+Do NOT use:
+
+- in-memory arrays
+- localStorage as the primary database
+- static JSON
+- hardcoded objects
+- browser-only storage
+
+Data must survive:
+
+- refresh
+- logout/login
+- server restart
+- deployment
+
+Preferred:
+
+- PostgreSQL
+- Prisma
+
+---
+
+# 11. REAL RESEARCH JOB ARCHITECTURE
+
+Research MUST run as a background job.
+
+Architecture:
+
+Frontend
+↓
+Create Research Job
+↓
+Backend
+↓
+Persistent Queue
+↓
+Research Worker
+↓
+Google Places API
+↓
+Website Verification
+↓
+Enrichment
+↓
+Deduplication
+↓
+Scoring
+↓
+PostgreSQL
+↓
+Live UI Updates
+
+The browser must NOT be required to stay open.
+
+Job states:
+
+- QUEUED
+- RUNNING
+- PAUSED
+- RETRYING
+- COMPLETED
+- FAILED
+- CANCELLED
+- PARTIALLY_COMPLETED
+
+Recommended batch size:
+
+25–50 candidates.
+
+Checkpoint after batches.
+
+Support retry with exponential backoff.
+
+Support resume after interruption.
+
+---
+
+# 12. REAL PROGRESS
+
+Progress must come from actual backend work.
+
+Example:
+
+Candidates discovered: 1,284  
+Qualified: 743  
+Website checks completed: 512  
+Needs review: 38  
+Duplicates: 61  
+Final qualified: 347
+
+Do NOT fake:
+
+0% → 25% → 50% → 75% → 100%
+
+---
+
+# 13. REAL PAUSE / RESUME / CANCEL
+
+If the UI contains:
+
+- Pause
+- Resume
+- Cancel
+
+these must actually affect the backend ResearchJob.
+
+They must not merely change the button state.
+
+---
+
+# 14. SECURITY
+
+## Google API
+
+- Store API key server-side.
+- Never expose secret keys in frontend code.
+- Use environment variables.
+- Restrict API key permissions.
+- Enable only required APIs.
+- Never commit secrets.
+
+## Website Verification
+
+Implement SSRF protection:
+
+- Block localhost
+- Block private IP ranges
+- Block internal services
+- Validate DNS
+- Limit redirects
+- Limit response size
+- Set request timeout
+- Validate URL scheme
+- Handle TLS errors
+
+## Authentication
+
+Use production-grade authentication.
+
+Every protected mutation requires server-side authorization.
+
+---
+
+# 15. APP FLOW
+
+## Main Navigation
+
+- Dashboard
+- Campaigns
+- Restaurant Leads
+- Research Agent
+- Verification Queue
+- CRM
+- Exports
+- API Usage
+- Settings
+
+## Campaign Flow
+
+1. Open Campaigns.
+2. Click Create Campaign.
+3. Enter campaign name.
+4. Select location.
+5. Select business category.
+6. Set rating threshold.
+7. Set review threshold.
+8. Set website requirement.
+9. Configure enrichment.
+10. Set target count.
+11. Review.
+12. Start Research.
+
+## Research Flow
+
+DISCOVER
+→ FILTER
+→ PLACE DETAILS
+→ GEO VALIDATE
+→ WEBSITE CHECK
+→ ENRICH
+→ VERIFY
+→ DEDUPLICATE
+→ SCORE
+→ SAVE
+→ REPORT
+
+## Lead Flow
+
+Restaurant Leads
+→ Search
+→ Filter
+→ Open Lead
+→ Inspect evidence
+→ Edit/verify
+→ CRM status
+→ Export
+
+## Verification Queue
+
+Ambiguous records should enter manual review.
+
+Actions:
+
+- Approve
+- Reject
+- Edit
+- Merge
+- Not Found
+- Needs Review
+
+Every manual decision is recorded in VerificationHistory.
+
+---
+
+# 16. UI/UX DESIGN BRIEF
+
+## Design Goal
+
+Create a premium B2B research SaaS application.
+
+It should feel like serious operational intelligence software.
+
+Avoid:
+
+- generic AI dashboards
+- excessive gradients
+- excessive glow
+- decorative clutter
+- giant unnecessary illustrations
+- fake statistics
+
+Prioritize:
+
+- clarity
+- speed
+- evidence
+- data density
+- readability
+- confidence
+- professional appearance
+
+## Dashboard
+
+Include:
+
+- Campaign metrics
+- Active research jobs
+- Qualified leads
+- No-website leads
+- Needs-review leads
+- High digital-gap leads
+- Average rating
+- Average review count
+- Recent verified leads
+- API usage
+
+All values must come from real data.
+
+## Campaign Wizard
+
+Steps:
+
+1. Campaign
+2. Location
+3. Business Type
+4. Google Criteria
+5. Website Criteria
+6. Enrichment
+7. Target
+8. Review & Start
+
+## Research Monitor
+
+Display real:
+
+- Job status
+- Current stage
+- Current location
+- Search query
+- Candidates discovered
+- Qualified
+- Rejected
+- Needs Review
+- Duplicates
+- API requests
+- Elapsed time
+- Errors
+
+## Lead Table
+
+Support:
+
+- Search
+- Advanced filters
+- Sorting
+- Pagination
+- Column customization
+- Bulk selection
+- Bulk status updates
+- Export
+
+## Lead Detail
+
+Show:
+
+- Restaurant identity
+- Google Maps link
+- Rating
+- Reviews
+- Business status
+- Website status
+- Website verification explanation
+- Phone
+- Email
+- WhatsApp status
+- Social media
+- Public decision maker
+- Lead score
+- Digital-gap score
+- Sources
+- Verification history
+- CRM status
+- Notes
+
+---
+
+# 17. CONFIDENCE SYSTEM
+
+Confidence levels:
+
+- HIGH
+- MEDIUM
+- LOW
+
+Every uncertain field should communicate its confidence.
+
+Never make an uncertain result visually identical to a strongly verified result.
+
+---
+
+# 18. ERROR STATES
+
+Handle:
+
+- Missing Google API key
+- Invalid API key
+- API permission denied
+- API quota exceeded
+- API rate limit
+- Google service unavailable
+- Website timeout
+- Website blocked
+- DNS failure
+- Research job failure
+- Database failure
+- No results
+- No qualifying leads
+
+Never replace an error with fake data.
+
+---
+
+# 19. BACKEND SCHEMA
+
+## RestaurantLead
+
+Required fields include:
+
+- id
+- restaurant_name
+- google_place_id
+- google_maps_url
+- business_category
+- google_rating
+- google_review_count
+- business_status
+- country
+- country_code
+- state_region
+- state_region_code
+- city
+- city_id
+- neighborhood
+- postal_code
+- address
+- latitude
+- longitude
+- distance_from_target
+- primary_phone
+- secondary_phone
+- international_phone
+- whatsapp_number
+- whatsapp_status
+- primary_email
+- secondary_email
+- email_confidence
+- official_website
+- website_domain
+- website_status
+- website_verification_notes
+- facebook_url
+- instagram_url
+- tiktok_url
+- linkedin_url
+- twitter_url
+- youtube_url
+- owner_name
+- co_owner_name
+- founder_name
+- manager_name
+- decision_maker_role
+- public_business_contact
+- lead_score
+- digital_gap_score
+- digital_gap_label
+- qualification_status
+- verification_status
+- confidence_level
+- rejection_reason
+- source_urls
+- sources_checked
+- last_verified_at
+- discovered_at
+- outreach_status
+- outreach_notes
+- assigned_to
+- tags
+- created_at
+- updated_at
+
+## Campaign
+
+Fields:
+
+- id
+- campaign_name
+- description
+- target_lead_count
+- minimum_rating
+- minimum_review_count
+- business_categories
+- website_requirement
+- status
+- progress
+- created_at
+- started_at
+- completed_at
+
+## CampaignLocation
+
+Fields:
+
+- id
+- campaign_id
+- country
+- country_code
+- state_region
+- state_region_code
+- city
+- city_id
+- neighborhood
+- postal_code
+- latitude
+- longitude
+- radius
+- radius_unit
+- location_mode
+- location_display_name
+- location_query
+- location_source
+- location_confidence
+- discovered_count
+- qualified_count
+- rejected_count
+
+## ResearchJob
+
+Fields:
+
+- id
+- campaign_id
+- status
+- current_stage
+- progress_percent
+- total_discovered
+- total_qualified
+- total_rejected
+- total_needs_review
+- api_requests
+- current_location_id
+- current_search_query
+- last_checkpoint
+- started_at
+- completed_at
+- error_message
+
+## LeadSource
+
+Fields:
+
+- id
+- restaurant_lead_id
+- source_type
+- source_name
+- source_url
+- information_found
+- confidence
+- checked_at
+
+## VerificationHistory
+
+Fields:
+
+- id
+- restaurant_lead_id
+- field_name
+- old_value
+- new_value
+- source
+- confidence
+- changed_at
+- changed_by
+
+---
+
+# 20. DATABASE INDEXES
+
+Create indexes for:
+
+- google_place_id
+- campaign_id
+- country
+- state_region
+- city
+- google_rating
+- google_review_count
+- website_status
+- qualification_status
+- verification_status
+- lead_score
+- digital_gap_score
+- last_verified_at
+
+Use unique constraints where appropriate.
+
+---
+
+# 21. TECHNICAL STACK
+
+Preferred:
+
+### Frontend
+
+Next.js  
+React  
+TypeScript
+
+### UI
+
+Tailwind CSS  
+shadcn/ui
+
+### Backend
+
+Next.js server-side APIs/server actions or separate production backend
+
+### Database
+
+PostgreSQL
+
+### ORM
+
+Prisma
+
+### Queue
+
+Redis + BullMQ or equivalent persistent queue
+
+### External Data
+
+Google Places API (New)
+
+### Authentication
+
+Production-grade authentication
+
+---
+
+# 22. API / SERVICE LAYER
+
+Create clear service abstractions:
+
+- GooglePlacesService
+- WebsiteVerificationService
+- EnrichmentService
+- LeadScoringService
+- DeduplicationService
+- ResearchJobService
+- ExportService
+- AuditService
+
+Do not scatter Google API calls throughout React components.
+
+---
+
+# 23. IMPLEMENTATION PLAN
+
+## Phase 0 — Project Audit
+
+Before coding:
+
+1. Inspect existing project.
+2. Identify framework.
+3. Identify package manager.
+4. Inspect routes.
+5. Inspect components.
+6. Inspect database.
+7. Inspect authentication.
+8. Inspect environment variables.
+9. Inspect existing backend.
+10. Do not destroy working infrastructure.
+
+## Phase 1 — Foundation
+
+Implement:
+
+- TypeScript architecture
+- UI system
+- Authentication
+- PostgreSQL
+- Prisma
+- Migrations
+- Secure environment configuration
+- Application layout
+
+## Phase 2 — Database
+
+Implement:
+
+- Entities
+- Relations
+- Enums
+- Constraints
+- Indexes
+- Migrations
+- Database access layer
+
+## Phase 3 — Google Places
+
+Implement:
+
+- Text Search
+- Nearby Search where appropriate
+- Place Details
+- Place IDs
+- Field masks
+- Error handling
+- Rate-limit handling
+- Geographic coverage
+
+## Phase 4 — Campaign System
+
+Implement:
+
+- Campaign CRUD
+- Location selector
+- Multi-location campaigns
+- Criteria
+- Validation
+- Campaign summary
+
+## Phase 5 — Research Worker
+
+Implement:
+
+- Persistent queue
+- ResearchJob
+- Batch processing
+- Checkpoints
+- Retry/backoff
+- Pause
+- Resume
+- Cancel
+
+## Phase 6 — Website Verification
+
+Implement:
+
+- URL validation
+- Secure fetching
+- SSRF protection
+- Redirect handling
+- Identity matching
+- Website classification
+
+## Phase 7 — Enrichment
+
+Implement:
+
+- Phone normalization
+- Public email discovery
+- Social discovery
+- Social verification
+- Public business decision-maker research
+- Source evidence
+
+## Phase 8 — Quality Engine
+
+Implement:
+
+- Deduplication
+- Conflict detection
+- Confidence
+- Lead scoring
+- Digital-gap scoring
+- Verification queue
+
+## Phase 9 — UI
+
+Implement:
+
+- Dashboard
+- Campaigns
+- Campaign wizard
+- Research monitor
+- Lead table
+- Lead detail
+- Verification queue
+- CRM
+- Exports
+- API usage
+- Settings
+
+## Phase 10 — Export
+
+Implement:
+
+- CSV
+- JSON
+- PDF
+- Large export jobs
+- Permissions
+
+## Phase 11 — Testing
+
+Test:
+
+- Google API
+- Database
+- Location filtering
+- Rating filtering
+- Review filtering
+- Website verification
+- Deduplication
+- Scoring
+- Queue
+- Pause/resume
+- Export
+- Authentication
+- Authorization
+- SSRF protection
+- End-to-end campaign
+
+## Phase 12 — Production Hardening
+
+Review:
+
+- Security
+- Secrets
+- Authorization
+- Rate limits
+- Database indexes
+- Logging
+- Error handling
+- Backups
+- Production environment
+
+---
+
+# 24. MANDATORY END-TO-END ACCEPTANCE TEST
+
+Before declaring the project complete:
+
+1. Configure a REAL Google Maps API key.
+2. Create a REAL campaign.
+3. Select a REAL country/city.
+4. Set rating criteria.
+5. Set review criteria.
+6. Set website criteria.
+7. Start research.
+8. Confirm real Google Places API requests.
+9. Confirm real Place IDs.
+10. Confirm database records are created.
+11. Confirm geographic filtering.
+12. Confirm rating/review filtering.
+13. Confirm website verification.
+14. Confirm enrichment.
+15. Confirm source evidence.
+16. Confirm deduplication.
+17. Confirm scoring.
+18. Refresh the browser during research.
+19. Confirm the job continues/persists.
+20. Open a real lead.
+21. Inspect evidence.
+22. Export actual records.
+23. Confirm export matches database.
+24. Trigger an API error.
+25. Confirm the application reports the error rather than showing fake data.
+
+---
+
+# 25. DEFINITION OF DONE
+
+The project is complete ONLY when a real user can:
+
+1. Open the application.
+2. Authenticate.
+3. Create a campaign.
+4. Select a real geographic location.
+5. Configure real criteria.
+6. Connect a real Google Places API key.
+7. Start research.
+8. Discover real restaurants.
+9. Verify real business data.
+10. Verify website status.
+11. Enrich public business information.
+12. Deduplicate.
+13. Score.
+14. Review source evidence.
+15. Store results persistently.
+16. Continue/recover background research.
+17. Filter and search real records.
+18. Export real records.
+
+A beautiful UI without functioning backend behavior is NOT considered complete.
+
+---
+
+# 26. FINAL ANTIGRAVITY INSTRUCTION
+
+Before writing implementation code:
+
+1. Read this entire document.
+2. Inspect the existing project.
+3. Understand the architecture.
+4. Identify missing infrastructure.
+5. Identify required API credentials.
+6. Identify database requirements.
+7. Identify background-job requirements.
+8. Produce a concise implementation plan.
+9. Ask for clarification ONLY when genuinely necessary.
+10. Then implement incrementally.
+
+DO NOT start by generating a static dashboard with mock restaurant data.
+
+Build the real data layer and Google Places integration early.
+
+Every UI feature must connect to real backend functionality.
+
+Every research result must come from real data.
+
+Every database record must be persistent.
+
+Every progress indicator must represent real backend progress.
+
+Every export must contain real database records.
+
+Every error must be reported honestly.
+
+**BUILD THE ACTUAL PRODUCT — NOT A DEMO.**

@@ -1,0 +1,239 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  name         String
+  role         String    @default("ADMIN") // ADMIN, RESEARCHER, VIEWER
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  sessions     Session[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Campaign {
+  id                  String             @id @default(cuid())
+  campaign_name       String
+  description         String?
+  target_lead_count   Int                @default(100)
+  minimum_rating      Float              @default(3.0)
+  minimum_review_count Int               @default(50)
+  business_categories String             @default("restaurant") // JSON string or comma-separated
+  website_requirement String             @default("NO_OFFICIAL_WEBSITE") // NO_OFFICIAL_WEBSITE, ANY, HAS_WEBSITE, SOCIAL_OR_NONE
+  status              String             @default("DRAFT") // DRAFT, QUEUED, RUNNING, PAUSED, COMPLETED, FAILED, CANCELLED
+  progress            Float              @default(0.0)
+  created_at          DateTime           @default(now())
+  started_at          DateTime?
+  completed_at        DateTime?
+  locations           CampaignLocation[]
+  leads               RestaurantLead[]
+  jobs                ResearchJob[]
+}
+
+model CampaignLocation {
+  id                    String    @id @default(cuid())
+  campaign_id           String
+  campaign              Campaign  @relation(fields: [campaign_id], references: [id], onDelete: Cascade)
+  country               String    @default("United States")
+  country_code          String    @default("US")
+  state_region          String?
+  state_region_code     String?
+  city                  String
+  city_id               String?
+  neighborhood          String?
+  postal_code           String?
+  latitude              Float?
+  longitude             Float?
+  radius                Float?    // in meters or km
+  radius_unit           String    @default("km")
+  location_mode         String    @default("CITY") // CITY, AREA, RADIUS, POSTAL_CODE
+  location_display_name String
+  location_query        String
+  location_source       String    @default("USER_INPUT")
+  location_confidence   String    @default("HIGH") // HIGH, MEDIUM, LOW
+  discovered_count      Int       @default(0)
+  qualified_count       Int       @default(0)
+  rejected_count        Int       @default(0)
+
+  @@index([campaign_id])
+  @@index([city])
+}
+
+model ResearchJob {
+  id                    String    @id @default(cuid())
+  campaign_id           String
+  campaign              Campaign  @relation(fields: [campaign_id], references: [id], onDelete: Cascade)
+  status                String    @default("QUEUED") // QUEUED, RUNNING, PAUSED, RETRYING, COMPLETED, FAILED, CANCELLED, PARTIALLY_COMPLETED
+  current_stage         String    @default("INIT") // INIT, DISCOVERING, FILTERING, PLACE_DETAILS, GEO_VALIDATING, WEBSITE_VERIFYING, ENRICHING, DEDUPLICATING, SCORING, SAVING, FINALIZING
+  progress_percent      Float     @default(0.0)
+  total_discovered      Int       @default(0)
+  total_qualified       Int       @default(0)
+  total_rejected        Int       @default(0)
+  total_needs_review    Int       @default(0)
+  total_duplicates      Int       @default(0)
+  api_requests          Int       @default(0)
+  current_location_id   String?
+  current_search_query  String?
+  last_checkpoint       String?   // JSON state for pause/resume
+  started_at            DateTime?
+  completed_at          DateTime?
+  error_message         String?
+  retry_count           Int       @default(0)
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @updatedAt
+
+  @@index([campaign_id])
+  @@index([status])
+}
+
+model RestaurantLead {
+  id                        String                @id @default(cuid())
+  campaign_id               String?
+  campaign                  Campaign?             @relation(fields: [campaign_id], references: [id], onDelete: SetNull)
+  restaurant_name           String
+  google_place_id           String                @unique
+  google_maps_url           String?
+  business_category         String?
+  google_rating             Float?
+  google_review_count       Int                   @default(0)
+  business_status           String?               @default("OPERATIONAL")
+  country                   String?               @default("United States")
+  country_code              String?               @default("US")
+  state_region              String?
+  state_region_code         String?
+  city                      String?
+  city_id                   String?
+  neighborhood              String?
+  postal_code               String?
+  address                   String?
+  latitude                  Float?
+  longitude                 Float?
+  distance_from_target      Float?
+  primary_phone             String?
+  secondary_phone           String?
+  international_phone       String?
+  whatsapp_number           String?
+  whatsapp_status           String                @default("NOT_FOUND") // VERIFIED, PROBABLE, NOT_FOUND
+  primary_email             String?
+  secondary_email           String?
+  email_confidence          String                @default("NOT_FOUND") // HIGH, MEDIUM, LOW, NOT_FOUND
+  official_website          String?
+  website_domain            String?
+  website_status            String                @default("UNKNOWN") // NO_WEBSITE_VERIFIED, NO_WEBSITE_PROBABLE, HAS_OFFICIAL_WEBSITE, SOCIAL_ONLY, MARKETPLACE_ONLY, UNKNOWN
+  website_verification_notes String?
+  facebook_url              String?
+  instagram_url             String?
+  tiktok_url                String?
+  linkedin_url              String?
+  twitter_url               String?
+  youtube_url               String?
+  owner_name                String?
+  co_owner_name             String?
+  founder_name              String?
+  manager_name              String?
+  decision_maker_role       String?
+  public_business_contact   String?
+  lead_score                Int                   @default(0) // 0-100
+  digital_gap_score         Int                   @default(0) // 0-100
+  digital_gap_label         String                @default("MEDIUM DIGITAL GAP") // HIGH DIGITAL GAP, MEDIUM DIGITAL GAP, LOW DIGITAL GAP
+  qualification_status      String                @default("QUALIFIED") // QUALIFIED, REJECTED, NEEDS_REVIEW, INSUFFICIENT_DATA, DUPLICATE, HAS_WEBSITE, CLOSED, OUTSIDE_TARGET_AREA
+  verification_status       String                @default("UNVERIFIED") // UNVERIFIED, PENDING_REVIEW, VERIFIED, REJECTED
+  confidence_level          String                @default("MEDIUM") // HIGH, MEDIUM, LOW
+  rejection_reason          String?
+  source_urls               String?               // JSON array of URLs
+  sources_checked           String?               // JSON array of checks
+  last_verified_at          DateTime?
+  discovered_at             DateTime              @default(now())
+  outreach_status           String                @default("NEW") // NEW, CONTACTED, IN_CONVERSATION, MEETING_BOOKED, PROPOSAL_SENT, CLOSED_WON, CLOSED_LOST, NOT_INTERESTED
+  outreach_notes            String?
+  assigned_to               String?
+  tags                      String?               // JSON array of strings
+  created_at                DateTime              @default(now())
+  updated_at                DateTime              @updatedAt
+
+  sources                   LeadSource[]
+  history                   VerificationHistory[]
+
+  @@index([google_place_id])
+  @@index([campaign_id])
+  @@index([country])
+  @@index([state_region])
+  @@index([city])
+  @@index([google_rating])
+  @@index([google_review_count])
+  @@index([website_status])
+  @@index([qualification_status])
+  @@index([verification_status])
+  @@index([lead_score])
+  @@index([digital_gap_score])
+  @@index([last_verified_at])
+}
+
+model LeadSource {
+  id                 String         @id @default(cuid())
+  restaurant_lead_id String
+  restaurant_lead    RestaurantLead @relation(fields: [restaurant_lead_id], references: [id], onDelete: Cascade)
+  source_type        String         // GOOGLE_PLACES, OFFICIAL_WEBSITE, FACEBOOK, INSTAGRAM, YELP, WHOIS, DNS
+  source_name        String
+  source_url         String?
+  information_found  String?        // Summary or JSON of facts extracted
+  confidence         String         @default("HIGH") // HIGH, MEDIUM, LOW
+  checked_at         DateTime       @default(now())
+
+  @@index([restaurant_lead_id])
+}
+
+model VerificationHistory {
+  id                 String         @id @default(cuid())
+  restaurant_lead_id String
+  restaurant_lead    RestaurantLead @relation(fields: [restaurant_lead_id], references: [id], onDelete: Cascade)
+  field_name         String
+  old_value          String?
+  new_value          String?
+  source             String?        // USER_MANUAL, AUTOMATED_RESEARCH, RE_VERIFICATION
+  confidence         String?
+  changed_at         DateTime       @default(now())
+  changed_by         String?
+
+  @@index([restaurant_lead_id])
+}
+
+model ApiSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  is_secret   Boolean  @default(false)
+  description String?
+  updated_at  DateTime @updatedAt
+}
+
+model ApiAuditLog {
+  id               String   @id @default(cuid())
+  service_name     String   // GOOGLE_PLACES, WEBSITE_PROBER, ENRICHMENT
+  endpoint         String
+  status_code      Int?
+  request_summary  String?
+  response_summary String?
+  error_message    String?
+  duration_ms      Int?
+  created_at       DateTime @default(now())
+
+  @@index([service_name])
+  @@index([created_at])
+}
