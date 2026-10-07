@@ -22,7 +22,7 @@ export async function GET() {
         totalAuditLogs,
       },
       database: {
-        type: "SQLite (Production-Ready Persistent ORM via Prisma)",
+        type: "PostgreSQL (Neon Cloud Database via Prisma)",
         status: "CONNECTED",
       },
     });
