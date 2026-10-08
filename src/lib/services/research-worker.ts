@@ -8,6 +8,36 @@ import { EnrichmentService } from "./enrichment";
 // In-memory registry of active background abort controllers to allow instantaneous cancellation
 const activeJobControllers = new Map<string, AbortController>();
 
+/**
+ * Retries transient database errors (e.g. pooler reconnection, packet drops) with exponential backoff.
+ */
+export async function withDbRetry<T>(fn: () => Promise<T>, maxRetries = 3, baseDelayMs = 1000): Promise<T> {
+  let attempt = 0;
+  while (true) {
+    try {
+      return await fn();
+    } catch (err: any) {
+      attempt++;
+      const isConnectionError =
+        err?.message?.includes("Can't reach database server") ||
+        err?.message?.includes("Connection refused") ||
+        err?.message?.includes("Connection closed") ||
+        err?.message?.includes("connection timeout") ||
+        err?.message?.includes("timed out") ||
+        err?.message?.includes("terminating connection") ||
+        err?.message?.includes("closed unexpectedly") ||
+        err?.message?.includes("server closed the connection");
+
+      if (isConnectionError && attempt < maxRetries) {
+        console.warn(`Transient database error, retrying attempt ${attempt}/${maxRetries} in ${baseDelayMs * attempt}ms...`, err?.message);
+        await new Promise((r) => setTimeout(r, baseDelayMs * attempt));
+        continue;
+      }
+      throw err;
+    }
+  }
+}
+
 export class ResearchWorkerService {
   /**
    * Start a research job in the background
@@ -259,14 +289,20 @@ export class ResearchWorkerService {
           });
 
           // Process each candidate through the pipeline
+          let candidateIdx = 0;
           for (const candidate of candidates) {
+            candidateIdx++;
             if (signal.aborted || totalQualified >= targetLeadCount) break;
 
-            const checkState = await prisma.researchJob.findUnique({
-              where: { id: jobId },
-              select: { status: true },
-            });
-            if (checkState?.status !== "RUNNING") return;
+            if (candidateIdx % 5 === 1) {
+              const checkState = await withDbRetry(() =>
+                prisma.researchJob.findUnique({
+                  where: { id: jobId },
+                  select: { status: true },
+                })
+              );
+              if (checkState?.status !== "RUNNING") return;
+            }
 
             // 1. FILTERING: Check rating and review count
             const rating = candidate.rating ?? 0;
@@ -383,70 +419,73 @@ export class ResearchWorkerService {
             });
 
             // 6. SAVE TO DATABASE
-            const newLead = await prisma.restaurantLead.create({
-              data: {
-                campaign_id: campaign.id,
-                restaurant_name: candidateName,
-                google_place_id: candidate.id,
-                google_maps_url:
-                  candidate.googleMapsUri ||
-                  `https://www.google.com/maps/place/?q=place_id:${candidate.id}`,
-                business_category: candidate.types?.[0] || baseCategory,
-                google_rating: candidate.rating,
-                google_review_count: candidate.userRatingCount || 0,
-                business_status: candidate.businessStatus || "OPERATIONAL",
-                country: location.country,
-                country_code: location.country_code,
-                state_region: location.state_region,
-                state_region_code: location.state_region_code,
-                city: location.city,
-                neighborhood: location.neighborhood,
-                postal_code: location.postal_code,
-                address: candidate.formattedAddress,
-                latitude: candidate.location?.latitude,
-                longitude: candidate.location?.longitude,
-                primary_phone: enriched.primaryPhone,
-                international_phone: enriched.internationalPhone,
-                whatsapp_number: enriched.whatsappNumber,
-                whatsapp_status: enriched.whatsappStatus,
-                primary_email: enriched.primaryEmail,
-                email_confidence: enriched.emailConfidence,
-                official_website: webVerification.officialUrl,
-                website_domain: webVerification.domain,
-                website_status: webVerification.status,
-                website_verification_notes: webVerification.notes,
-                facebook_url: enriched.facebookUrl,
-                instagram_url: enriched.instagramUrl,
-                tiktok_url: enriched.tiktokUrl,
-                linkedin_url: enriched.linkedinUrl,
-                twitter_url: enriched.twitterUrl,
-                youtube_url: enriched.youtubeUrl,
-                owner_name: enriched.ownerName,
-                decision_maker_role: enriched.decisionMakerRole,
-                public_business_contact: enriched.publicBusinessContact,
-                lead_score: scoring.totalScore,
-                digital_gap_score: scoring.digitalGapScore,
-                digital_gap_label: scoring.digitalGapLabel,
-                qualification_status:
-                  webVerification.status === "UNKNOWN" ? "NEEDS_REVIEW" : "QUALIFIED",
-                verification_status: "VERIFIED",
-                confidence_level: webVerification.confidence,
-                rejection_reason: rejectionReason,
-                source_urls: JSON.stringify(
-                  [
-                    candidate.googleMapsUri,
-                    webVerification.officialUrl,
-                    enriched.facebookUrl,
-                    enriched.instagramUrl,
-                  ].filter(Boolean)
-                ),
-                sources_checked: JSON.stringify(["GOOGLE_PLACES", "WEBSITE_AUDIT"]),
-                last_verified_at: new Date(),
-              },
-            });
+            const newLead = await withDbRetry(() =>
+              prisma.restaurantLead.create({
+                data: {
+                  campaign_id: campaign.id,
+                  restaurant_name: candidateName,
+                  google_place_id: candidate.id,
+                  google_maps_url:
+                    candidate.googleMapsUri ||
+                    `https://www.google.com/maps/place/?q=place_id:${candidate.id}`,
+                  business_category: candidate.types?.[0] || baseCategory,
+                  google_rating: candidate.rating,
+                  google_review_count: candidate.userRatingCount || 0,
+                  business_status: candidate.businessStatus || "OPERATIONAL",
+                  country: location.country,
+                  country_code: location.country_code,
+                  state_region: location.state_region,
+                  state_region_code: location.state_region_code,
+                  city: location.city,
+                  neighborhood: location.neighborhood,
+                  postal_code: location.postal_code,
+                  address: candidate.formattedAddress,
+                  latitude: candidate.location?.latitude,
+                  longitude: candidate.location?.longitude,
+                  primary_phone: enriched.primaryPhone,
+                  international_phone: enriched.internationalPhone,
+                  whatsapp_number: enriched.whatsappNumber,
+                  whatsapp_status: enriched.whatsappStatus,
+                  primary_email: enriched.primaryEmail,
+                  email_confidence: enriched.emailConfidence,
+                  official_website: webVerification.officialUrl,
+                  website_domain: webVerification.domain,
+                  website_status: webVerification.status,
+                  website_verification_notes: webVerification.notes,
+                  facebook_url: enriched.facebookUrl,
+                  instagram_url: enriched.instagramUrl,
+                  tiktok_url: enriched.tiktokUrl,
+                  linkedin_url: enriched.linkedinUrl,
+                  twitter_url: enriched.twitterUrl,
+                  youtube_url: enriched.youtubeUrl,
+                  owner_name: enriched.ownerName,
+                  decision_maker_role: enriched.decisionMakerRole,
+                  public_business_contact: enriched.publicBusinessContact,
+                  lead_score: scoring.totalScore,
+                  digital_gap_score: scoring.digitalGapScore,
+                  digital_gap_label: scoring.digitalGapLabel,
+                  qualification_status:
+                    webVerification.status === "UNKNOWN" ? "NEEDS_REVIEW" : "QUALIFIED",
+                  verification_status: "VERIFIED",
+                  confidence_level: webVerification.confidence,
+                  rejection_reason: rejectionReason,
+                  source_urls: JSON.stringify(
+                    [
+                      candidate.googleMapsUri,
+                      webVerification.officialUrl,
+                      enriched.facebookUrl,
+                      enriched.instagramUrl,
+                    ].filter(Boolean)
+                  ),
+                  sources_checked: JSON.stringify(["GOOGLE_PLACES", "WEBSITE_AUDIT"]),
+                  last_verified_at: new Date(),
+                },
+              })
+            );
 
             // Create Google Places LeadSource
-            await prisma.leadSource.create({
+            await withDbRetry(() =>
+              prisma.leadSource.create({
               data: {
                 restaurant_lead_id: newLead.id,
                 source_type: "GOOGLE_PLACES",
@@ -460,7 +499,7 @@ export class ResearchWorkerService {
                 }),
                 confidence: "HIGH",
               },
-            });
+            }));
 
             // Create Website LeadSource if checked
             if (candidate.websiteUri) {

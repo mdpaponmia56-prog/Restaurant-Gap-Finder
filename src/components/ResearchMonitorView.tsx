@@ -152,14 +152,14 @@ export function ResearchMonitorView({
             </button>
           )}
 
-          {isPaused && (
+          {(isPaused || isFailed) && (
             <button
               disabled={controlLoading}
               onClick={() => handleControl("RESUME")}
               className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-50 transition-colors shadow-md"
             >
               <Play className="h-3.5 w-3.5 fill-current" />
-              <span>Resume Job</span>
+              <span>Resume / Retry Job</span>
             </button>
           )}
 
