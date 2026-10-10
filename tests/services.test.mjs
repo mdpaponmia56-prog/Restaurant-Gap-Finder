@@ -153,15 +153,23 @@ describe("6. Google Places API Service & Zero-Mock Policy", () => {
     const originalKey = process.env.GOOGLE_MAPS_API_KEY;
     delete process.env.GOOGLE_MAPS_API_KEY;
 
+    const dbSetting = await prisma.apiSetting.findUnique({ where: { key: "GOOGLE_MAPS_API_KEY" } });
+    if (dbSetting) {
+      await prisma.apiSetting.update({ where: { key: "GOOGLE_MAPS_API_KEY" }, data: { value: "" } });
+    }
+
     try {
       await GooglePlacesService.searchPlaces({ textQuery: "restaurants in Los Angeles" });
       assert.fail("Should have thrown GooglePlacesError");
     } catch (err) {
-      assert.ok(err instanceof GooglePlacesError);
+      assert.ok(err instanceof GooglePlacesError, `Expected GooglePlacesError but got: ${err?.message || err}`);
       assert.strictEqual(err.errorType, "MISSING_API_KEY");
       assert.match(err.message, /Google Maps API key is not configured/i);
     } finally {
       if (originalKey) process.env.GOOGLE_MAPS_API_KEY = originalKey;
+      if (dbSetting) {
+        await prisma.apiSetting.update({ where: { key: "GOOGLE_MAPS_API_KEY" }, data: { value: dbSetting.value } });
+      }
     }
   });
 });

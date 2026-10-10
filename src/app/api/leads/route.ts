@@ -111,16 +111,23 @@ export async function GET(req: NextRequest) {
       }),
     ]);
 
-    return NextResponse.json({
-      leads,
-      pagination: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit) || 1,
+    return NextResponse.json(
+      {
+        leads,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit) || 1,
+        },
+        parsedNlQuery: nlInterpreted,
       },
-      parsedNlQuery: nlInterpreted,
-    });
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=15, stale-while-revalidate=60",
+        },
+      }
+    );
   } catch (err: any) {
     console.error("Error fetching leads:", err);
     return NextResponse.json(

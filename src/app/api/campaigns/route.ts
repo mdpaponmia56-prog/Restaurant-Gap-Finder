@@ -45,7 +45,14 @@ export async function GET(req: NextRequest) {
       latest_job: c.jobs[0] || null,
     }));
 
-    return NextResponse.json({ campaigns: formatted });
+    return NextResponse.json(
+      { campaigns: formatted },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=15, stale-while-revalidate=60",
+        },
+      }
+    );
   } catch (err: any) {
     return NextResponse.json(
       { error: "Failed to list campaigns: " + err.message },

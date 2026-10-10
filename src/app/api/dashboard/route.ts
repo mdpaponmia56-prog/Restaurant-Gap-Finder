@@ -2,11 +2,29 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getApiSettingsStatus } from "@/lib/config";
 
-export async function GET() {
+// In-memory cache for ultra-fast edge/server responses
+let cachedDashboardData: any = null;
+let lastCacheTimestamp = 0;
+const CACHE_TTL_MS = 20 * 1000; // 20-second server-side TTL
+
+export async function GET(req: Request) {
   try {
-    const apiStatus = await getApiSettingsStatus();
+    const url = new URL(req.url);
+    const forceFresh = url.searchParams.get("fresh") === "true";
+
+    // Return in-memory cached copy if valid and fresh isn't requested
+    const now = Date.now();
+    if (!forceFresh && cachedDashboardData && (now - lastCacheTimestamp < CACHE_TTL_MS)) {
+      return NextResponse.json(cachedDashboardData, {
+        headers: {
+          "Cache-Control": "public, s-maxage=30, stale-while-revalidate=120",
+          "X-Data-Source": "memory-cache",
+        },
+      });
+    }
 
     const [
+      apiStatus,
       totalCampaigns,
       activeJobs,
       totalLeads,
@@ -15,7 +33,9 @@ export async function GET() {
       highGapLeads,
       recentLeads,
       apiAuditStats,
+      ratingAggregates,
     ] = await Promise.all([
+      getApiSettingsStatus(),
       prisma.campaign.count(),
       prisma.researchJob.findMany({
         where: { status: "RUNNING" },
@@ -63,24 +83,23 @@ export async function GET() {
       prisma.apiAuditLog.count({
         where: { service_name: "GOOGLE_PLACES" },
       }),
+      prisma.restaurantLead.aggregate({
+        where: { qualification_status: "QUALIFIED" },
+        _avg: {
+          google_rating: true,
+          google_review_count: true,
+        },
+      }),
     ]);
 
-    // Calculate real averages
-    const allLeadsForAvg = await prisma.restaurantLead.findMany({
-      where: { qualification_status: "QUALIFIED" },
-      select: { google_rating: true, google_review_count: true },
-    });
+    const avgRating = ratingAggregates._avg.google_rating
+      ? parseFloat(ratingAggregates._avg.google_rating.toFixed(1))
+      : 0;
+    const avgReviews = ratingAggregates._avg.google_review_count
+      ? Math.round(ratingAggregates._avg.google_review_count)
+      : 0;
 
-    let avgRating = 0;
-    let avgReviews = 0;
-    if (allLeadsForAvg.length > 0) {
-      const sumRating = allLeadsForAvg.reduce((acc, curr) => acc + (curr.google_rating || 0), 0);
-      const sumReviews = allLeadsForAvg.reduce((acc, curr) => acc + (curr.google_review_count || 0), 0);
-      avgRating = parseFloat((sumRating / allLeadsForAvg.length).toFixed(1));
-      avgReviews = Math.round(sumReviews / allLeadsForAvg.length);
-    }
-
-    return NextResponse.json({
+    const payload = {
       googleMapsConfigured: apiStatus.googleMapsConfigured,
       metrics: {
         totalCampaigns,
@@ -95,6 +114,17 @@ export async function GET() {
       },
       activeJobs,
       recentLeads,
+    };
+
+    // Update in-memory cache
+    cachedDashboardData = payload;
+    lastCacheTimestamp = now;
+
+    return NextResponse.json(payload, {
+      headers: {
+        "Cache-Control": "public, s-maxage=30, stale-while-revalidate=120",
+        "X-Data-Source": "database",
+      },
     });
   } catch (err: any) {
     return NextResponse.json(

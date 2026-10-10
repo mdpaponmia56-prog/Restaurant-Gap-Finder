@@ -1,19 +1,64 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { Navigation, NavTab } from "@/components/Navigation";
 import { DashboardView } from "@/components/DashboardView";
-import { CampaignsView } from "@/components/CampaignsView";
-import { ResearchMonitorView } from "@/components/ResearchMonitorView";
-import { LeadsView } from "@/components/LeadsView";
-import { VerificationQueueView } from "@/components/VerificationQueueView";
-import { CrmView } from "@/components/CrmView";
-import { ExportsView } from "@/components/ExportsView";
-import { ApiUsageView } from "@/components/ApiUsageView";
-import { SettingsView } from "@/components/SettingsView";
-import { CampaignBuilderModal } from "@/components/CampaignBuilderModal";
-import { LeadDetailModal } from "@/components/LeadDetailModal";
-import { AuthModal } from "@/components/AuthModal";
+import { ViewSkeleton } from "@/components/Skeletons";
+
+// Dynamically lazy-load secondary views to reduce initial bundle size and speed up LCP
+const CampaignsView = dynamic(
+  () => import("@/components/CampaignsView").then((mod) => mod.CampaignsView),
+  { loading: () => <ViewSkeleton title="Campaigns" /> }
+);
+
+const ResearchMonitorView = dynamic(
+  () => import("@/components/ResearchMonitorView").then((mod) => mod.ResearchMonitorView),
+  { loading: () => <ViewSkeleton title="Research Agent" /> }
+);
+
+const LeadsView = dynamic(
+  () => import("@/components/LeadsView").then((mod) => mod.LeadsView),
+  { loading: () => <ViewSkeleton title="Restaurant Leads" /> }
+);
+
+const VerificationQueueView = dynamic(
+  () => import("@/components/VerificationQueueView").then((mod) => mod.VerificationQueueView),
+  { loading: () => <ViewSkeleton title="Review Queue" /> }
+);
+
+const CrmView = dynamic(
+  () => import("@/components/CrmView").then((mod) => mod.CrmView),
+  { loading: () => <ViewSkeleton title="CRM Pipeline" /> }
+);
+
+const ExportsView = dynamic(
+  () => import("@/components/ExportsView").then((mod) => mod.ExportsView),
+  { loading: () => <ViewSkeleton title="Exports" /> }
+);
+
+const ApiUsageView = dynamic(
+  () => import("@/components/ApiUsageView").then((mod) => mod.ApiUsageView),
+  { loading: () => <ViewSkeleton title="API Usage & Logs" /> }
+);
+
+const SettingsView = dynamic(
+  () => import("@/components/SettingsView").then((mod) => mod.SettingsView),
+  { loading: () => <ViewSkeleton title="Settings" /> }
+);
+
+// Modals are loaded strictly on demand when user opens them
+const CampaignBuilderModal = dynamic(
+  () => import("@/components/CampaignBuilderModal").then((mod) => mod.CampaignBuilderModal)
+);
+
+const LeadDetailModal = dynamic(
+  () => import("@/components/LeadDetailModal").then((mod) => mod.LeadDetailModal)
+);
+
+const AuthModal = dynamic(
+  () => import("@/components/AuthModal").then((mod) => mod.AuthModal)
+);
 
 export default function Home() {
   const [currentTab, setCurrentTab] = useState<NavTab>("dashboard");

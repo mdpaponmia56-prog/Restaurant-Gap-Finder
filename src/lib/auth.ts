@@ -73,7 +73,13 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
   }
 }
 
+let cachedAdminUser: AuthUser | null = null;
+
 export async function ensureDefaultAdminUser(): Promise<AuthUser> {
+  if (cachedAdminUser) {
+    return cachedAdminUser;
+  }
+
   const count = await prisma.user.count();
   if (count === 0) {
     const defaultEmail = "admin@restaurantgapfinder.com";
@@ -86,18 +92,20 @@ export async function ensureDefaultAdminUser(): Promise<AuthUser> {
         role: "ADMIN",
       },
     });
-    return {
+    cachedAdminUser = {
       id: user.id,
       email: user.email,
       name: user.name,
       role: user.role,
     };
+    return cachedAdminUser;
   }
 
   const existing = await prisma.user.findFirst({
     select: { id: true, email: true, name: true, role: true },
   });
-  return existing!;
+  cachedAdminUser = existing!;
+  return cachedAdminUser;
 }
 
 export { COOKIE_NAME };

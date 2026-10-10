@@ -3,8 +3,26 @@ import { prisma } from "@/lib/prisma";
 import { getApiSettingsStatus, setApiKey } from "@/lib/config";
 import { GooglePlacesService } from "@/lib/services/google-places";
 
-export async function GET() {
+// In-memory cache for settings
+let cachedSettingsData: any = null;
+let lastSettingsCacheTime = 0;
+const SETTINGS_CACHE_TTL = 30 * 1000;
+
+export async function GET(req: Request) {
   try {
+    const url = new URL(req.url);
+    const forceFresh = url.searchParams.get("fresh") === "true";
+    const now = Date.now();
+
+    if (!forceFresh && cachedSettingsData && (now - lastSettingsCacheTime < SETTINGS_CACHE_TTL)) {
+      return NextResponse.json(cachedSettingsData, {
+        headers: {
+          "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+          "X-Data-Source": "memory-cache",
+        },
+      });
+    }
+
     const apiStatus = await getApiSettingsStatus();
     const [totalLeads, totalCampaigns, totalJobs, totalAuditLogs] = await Promise.all([
       prisma.restaurantLead.count(),
@@ -13,7 +31,7 @@ export async function GET() {
       prisma.apiAuditLog.count(),
     ]);
 
-    return NextResponse.json({
+    const payload = {
       googleMaps: apiStatus,
       stats: {
         totalLeads,
@@ -24,6 +42,16 @@ export async function GET() {
       database: {
         type: "PostgreSQL (Neon Cloud Database via Prisma)",
         status: "CONNECTED",
+      },
+    };
+
+    cachedSettingsData = payload;
+    lastSettingsCacheTime = now;
+
+    return NextResponse.json(payload, {
+      headers: {
+        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+        "X-Data-Source": "database",
       },
     });
   } catch (err: any) {
@@ -50,6 +78,10 @@ export async function POST(req: NextRequest) {
         "Google Places API (New) Secret Key"
       );
     }
+
+    // Invalidate cached settings
+    cachedSettingsData = null;
+    lastSettingsCacheTime = 0;
 
     const updatedStatus = await getApiSettingsStatus();
     return NextResponse.json({

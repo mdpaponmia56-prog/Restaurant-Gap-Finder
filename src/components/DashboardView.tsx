@@ -20,10 +20,14 @@ import {
 } from "lucide-react";
 import { NavTab } from "./Navigation";
 
+import { DashboardSkeleton } from "./Skeletons";
+
 interface DashboardProps {
   onNavigate: (tab: NavTab) => void;
   onOpenLead: (leadId: string) => void;
 }
+
+const DASHBOARD_CACHE_KEY = "rgf_dashboard_cache_v1";
 
 export function DashboardView({ onNavigate, onOpenLead }: DashboardProps) {
   const [data, setData] = useState<any>(null);
@@ -31,11 +35,31 @@ export function DashboardView({ onNavigate, onOpenLead }: DashboardProps) {
   const [refreshing, setRefreshing] = useState(false);
   const [controlLoading, setControlLoading] = useState(false);
 
-  const fetchDashboard = async () => {
+  // Initialize from client cache for instant 0ms progressive rendering
+  useEffect(() => {
     try {
-      const res = await fetch("/api/dashboard");
+      const cached = sessionStorage.getItem(DASHBOARD_CACHE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        setData(parsed);
+        setLoading(false);
+      }
+    } catch {
+      // Ignore storage errors
+    }
+  }, []);
+
+  const fetchDashboard = async (forceFresh = false) => {
+    try {
+      const url = forceFresh ? "/api/dashboard?fresh=true" : "/api/dashboard";
+      const res = await fetch(url);
       const json = await res.json();
       setData(json);
+      try {
+        sessionStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(json));
+      } catch {
+        // Ignore storage errors
+      }
     } catch (err) {
       console.error("Failed to load dashboard data:", err);
     } finally {
@@ -46,12 +70,18 @@ export function DashboardView({ onNavigate, onOpenLead }: DashboardProps) {
 
   useEffect(() => {
     fetchDashboard();
-    // Auto-refresh periodically if an active job is running
-    const interval = setInterval(() => {
-      fetchDashboard();
-    }, 4000);
-    return () => clearInterval(interval);
   }, []);
+
+  // Adaptive polling: ONLY poll if there is an active running job
+  useEffect(() => {
+    if (!data?.activeJobs || data.activeJobs.length === 0) {
+      return;
+    }
+    const interval = setInterval(() => {
+      fetchDashboard(true);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [data?.activeJobs?.length]);
 
   const handleControlJob = async (jobId: string, action: "PAUSE" | "RESUME" | "CANCEL") => {
     setControlLoading(true);
@@ -61,7 +91,7 @@ export function DashboardView({ onNavigate, onOpenLead }: DashboardProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ jobId, action }),
       });
-      await fetchDashboard();
+      await fetchDashboard(true);
     } catch (err) {
       console.error("Control action failed:", err);
     } finally {
@@ -69,15 +99,9 @@ export function DashboardView({ onNavigate, onOpenLead }: DashboardProps) {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex h-96 items-center justify-center">
-        <div className="flex items-center gap-3 text-slate-400">
-          <RefreshCw className="h-5 w-5 animate-spin text-emerald-500" />
-          <span>Loading verified operational intelligence...</span>
-        </div>
-      </div>
-    );
+  // Progressive Rendering: Display skeleton layout instead of blocking spinner
+  if (loading && !data) {
+    return <DashboardSkeleton />;
   }
 
   const metrics = data?.metrics || {
@@ -139,7 +163,7 @@ export function DashboardView({ onNavigate, onOpenLead }: DashboardProps) {
           <button
             onClick={() => {
               setRefreshing(true);
-              fetchDashboard();
+              fetchDashboard(true);
             }}
             disabled={refreshing}
             className="flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-xs font-medium text-slate-300 hover:bg-slate-850 hover:text-white transition-colors"
